@@ -9,7 +9,7 @@ function getRandomHexColor() {
 
 startBtn.addEventListener("click", () => {
   timerId = setInterval(() => {
-    body.style.backgroundColor = `${getRandomHexColor()}`;
+    body.style.backgroundColor = getRandomHexColor();
   }, 1000);
   startBtn.disabled = true;
   stopBtn.disabled = false;
