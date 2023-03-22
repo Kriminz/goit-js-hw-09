@@ -1,82 +1,113 @@
-// Описаний в документації
 import flatpickr from "flatpickr";
 import Notiflix from 'notiflix';
-// Додатковий імпорт стилів
 import "flatpickr/dist/flatpickr.min.css";
 
-const timePicker = document.querySelector("#datetime-picker");
-const startBtn = document.querySelector('button[data-start]');
+const refs = {
+  timePicker: document.querySelector("#datetime-picker"),
+  startBtn: document.querySelector('button[data-start]'),
+  days: document.querySelector('span[data-days]'),
+  hours: document.querySelector('span[data-hours]'),
+  minutes: document.querySelector('span[data-minutes]'),
+  seconds: document.querySelector('span[data-seconds]'),
+}
+var ms = 0;
+
+refs.startBtn.disabled = true;
+
 const options = {
   enableTime: true,
   time_24hr: true,
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    console.log(selectedDates[0]);
+    if(selectedDates[0] < new Date()) {
+      Notiflix.Notify.failure("Please choose a date in the future");
+    }
+    else {
+      refs.startBtn.disabled = false;
+    }
   },
 };
 
-const ft = flatpickr(timePicker, options);
+flatpickr(refs.timePicker, options);
 
-console.log(ft.onClose);
-
-//   const calcTime = convertMs();
-//   console.log(calcTime);
-
-class Countdown{
-  start() {
-    // function convertMs(ms) {
-    //   // Number of milliseconds per unit of time
-    //   const second = 1000;
-    //   const minute = second * 60;
-    //   const hour = minute * 60;
-    //   const day = hour * 24;
-
-    //   // Remaining days
-    //   const days = Math.floor(ms / day);
-    //   // Remaining hours
-    //   const hours = Math.floor((ms % day) / hour);
-    //   // Remaining minutes
-    //   const minutes = Math.floor(((ms % day) % hour) / minute);
-    //   // Remaining seconds
-    //   const seconds = Math.floor((((ms % day) % hour) % minute) / second);
-
-    //   return { days, hours, minutes, seconds };
-    // }
-
-    const date = new Date.now();
-
-  } 
+function pad(value) {
+  return value.toString().padStart(2, '0');
 }
 
+function convertMs(ms) {
+  // Number of milliseconds per unit of time
+  const second = 1000;
+  const minute = second * 60;
+  const hour = minute * 60;
+  const day = hour * 24;
 
+  // Remaining days
+  const days = pad (Math.floor(ms / day));
+  // Remaining hours
+  const hours = pad (Math.floor((ms % day) / hour));
+  // Remaining minutes
+  const minutes = pad (Math.floor(((ms % day) % hour) / minute));
+  // Remaining seconds
+  const seconds = pad (Math.floor((((ms % day) % hour) % minute) / second));
 
-console.log(date);
+  return { days, hours, minutes, seconds };
+  // console.log({ days, hours, minutes, seconds });
+}
 
-const countdown = new Countdown();
+function onCountdownChange({ days, hours, minutes, seconds }) {
+  refs.days.textContent = days;
+  refs.hours.textContent = hours;
+  refs.minutes.textContent = minutes;
+  refs.seconds.textContent = seconds;
+}
 
-timePicker.addEventListener('click', (e) => {
-  e.preventDefault();
-  console.log(e.target);
+class Countdown{
+
+  #intervalId = null
+
+  #onChangeCallback = () => {}
+
+  constructor ({onChange} = {}) {
+    if (onChange) {
+      this.#onChangeCallback = onChange;
+    }
+  }
+
+  start(chooseDate) {
+    this.#intervalId = setInterval(() => {
+      ms = chooseDate - new Date().getTime();
+      // console.log(ms);
+      // console.log(chooseDate);
+      // console.log(new Date);
+      convertMs(ms);
+      // putDays(dayCount);
+      this.#onChangeCallback(convertMs(ms));
+    }, 1000);
+  } 
+
+  stop() {
+    clearInterval(this.#intervalId);
+  }
+
+}
+
+const countdown = new Countdown({onChange: onCountdownChange});
+
+refs.startBtn.addEventListener('click', (e) => {
+  const chooseDate = new Date(refs.timePicker.value).getTime();
+  if(e.target.dataset.action === 'start') {
+    refs.startBtn.textContent = 'Stop';
+    e.target.dataset.action = 'stop';
+    refs.timePicker.disabled = true;
+
+    countdown.start(chooseDate);
+  }
+  else {
+    refs.startBtn.textContent = 'Start';
+    e.target.dataset.action = 'start';
+    refs.timePicker.disabled = false;
+
+    countdown.stop();
+  }
 });
-
-startBtn.addEventListener('click', (e) => {
-    countdown.start();
-});
-
-// startBtn.addEventListener('click', (e) => {
-//   if(e.target.dataset.action === 'start') {
-//     startBtn.textContent = 'Stop';
-//     e.target.dataset.action = 'stop';
-//     timePicker.disabled = true;
-
-//     countdown.start();
-//   }
-//   else {
-//     startBtn.textContent = 'Start';
-//     e.target.dataset.action = 'start';
-//     timePicker.disabled = false;
-
-//     countdown.stop();
-//   }
-// });
